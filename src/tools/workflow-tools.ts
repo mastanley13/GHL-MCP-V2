@@ -73,6 +73,9 @@ export class WorkflowTools {
       throw new Error(`Failed to get workflows: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
+
+  getToolDefinitions(): Tool[] { return this.getTools(); }
+  async executeTool(name: string, args: any): Promise<any> { return this.executeWorkflowTool(name, args); }
 }
 
 // Helper function to check if a tool name belongs to workflow tools

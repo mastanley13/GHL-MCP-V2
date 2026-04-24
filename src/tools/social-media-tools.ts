@@ -1029,4 +1029,6 @@ export class SocialMediaTools {
       message: `Retrieved ${params.platform} accounts for OAuth ID ${params.accountId}`
     };
   }
+
+  getToolDefinitions(): Tool[] { return this.getTools(); }
 } 

@@ -715,4 +715,7 @@ ${params.name ? `• **Search:** "${params.name}"` : ''}`
       };
     }
   }
+
+  getToolDefinitions(): Tool[] { return this.getTools(); }
+  async executeTool(name: string, args: any): Promise<any> { return this.executeProductsTool(name, args); }
 } 

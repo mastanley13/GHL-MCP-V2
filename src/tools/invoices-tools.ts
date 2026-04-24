@@ -900,4 +900,7 @@ export class InvoicesTools {
     }
   }
 
+
+  getToolDefinitions(): Tool[] { return this.getTools(); }
+  async executeTool(name: string, args: any): Promise<any> { return this.handleToolCall(name, args); }
 }

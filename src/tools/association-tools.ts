@@ -387,4 +387,7 @@ export class AssociationTools {
       };
     }
   }
+
+  getToolDefinitions(): Tool[] { return this.getTools(); }
+  async executeTool(name: string, args: any): Promise<any> { return this.executeAssociationTool(name, args); }
 } 

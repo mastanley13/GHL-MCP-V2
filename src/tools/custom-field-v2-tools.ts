@@ -441,4 +441,7 @@ export class CustomFieldV2Tools {
     }
     return result.data;
   }
+
+  getToolDefinitions(): Tool[] { return this.getTools(); }
+  async executeTool(name: string, args: any): Promise<any> { return this.executeCustomFieldV2Tool(name, args); }
 }

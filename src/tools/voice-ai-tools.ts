@@ -211,5 +211,7 @@ export class VoiceAITools {
         throw new Error(`Unknown tool: ${name}`);
     }
   }
+
+  getToolDefinitions(): Tool[] { return this.getTools(); }
 }
 

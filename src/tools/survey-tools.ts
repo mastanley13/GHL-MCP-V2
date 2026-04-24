@@ -180,6 +180,9 @@ export class SurveyTools {
       throw new Error(`Failed to get survey submissions: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
+
+  getToolDefinitions(): Tool[] { return this.getTools(); }
+  async executeTool(name: string, args: any): Promise<any> { return this.executeSurveyTool(name, args); }
 }
 
 // Helper function to check if a tool name belongs to survey tools

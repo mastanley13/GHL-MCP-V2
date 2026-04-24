@@ -389,6 +389,7 @@ import {
   ListInvoicesResponseDto,
   AltDto
 } from '../types/ghl-types.js';
+import { LocationKeyManager, ResolvedAuth } from './location-keys.js';
 
 /**
  * GoHighLevel API Client
@@ -397,6 +398,7 @@ import {
 export class GHLApiClient {
   private axiosInstance: AxiosInstance;
   private config: GHLConfig;
+  private locationKeyManager: LocationKeyManager;
 
   constructor(config?: GHLConfig) {
     // Use provided config or create from environment variables
@@ -426,6 +428,9 @@ export class GHLApiClient {
       };
     }
     
+    // Initialize location key manager for dual auth
+    this.locationKeyManager = new LocationKeyManager();
+
     // Create axios instance with base configuration
     this.axiosInstance = axios.create({
       baseURL: this.config.baseUrl,
@@ -472,7 +477,8 @@ export class GHLApiClient {
    */
   private handleApiError(error: AxiosError<GHLErrorResponse>): GHLApiResponse<never> {
     const status = error.response?.status || 500;
-    const message = error.response?.data?.message || error.message || 'Unknown error';
+    const data = error.response?.data as any;
+    const message = data?.message || error.message || 'Unknown error';
     const errorMessage = Array.isArray(message) ? message.join(', ') : message;
     
     return {
@@ -481,13 +487,37 @@ export class GHLApiClient {
       error: {
         message: `GHL API Error (${status}): ${errorMessage}`,
         statusCode: status,
-        details: error.response?.data
+        code: data?.error || data?.code,
+        fields: data?.errors || data?.fieldErrors,
+        details: data
       }
     };
   }
 
+
   /**
-   * Wrap API responses in standardized format
+   * Get authorization headers for a specific request, using per-location
+   * PIT keys when available, or falling back to the agency key.
+   */
+  getAuthHeaders(args?: Record<string, any>): Record<string, string> {
+    const resolved = this.locationKeyManager.resolve(args);
+    return {
+      'Authorization': `Bearer ${resolved.apiKey}`,
+      'Version': this.config.version,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+  }
+
+  /**
+   * Resolve the effective locationId for this request
+   */
+  resolveLocationId(args?: Record<string, any>): string {
+    return this.locationKeyManager.resolve(args).locationId;
+  }
+
+  /**
+ API responses in standardized format
    */
   private wrapResponse<T>(data: T): GHLApiResponse<T> {
     return {
@@ -8297,4 +8327,78 @@ export class GHLApiClient {
       return this.handleApiError(error as AxiosError<GHLErrorResponse>);
     }
   }
-} 
+
+  // ========== MISSING PAYMENT ENDPOINTS ==========
+
+  /**
+   * Record a manual payment for an order
+   * POST /payments/orders/{orderId}/record-payment
+   */
+  async recordOrderPayment(orderId: string, data: Record<string, any>): Promise<GHLApiResponse<any>> {
+    try {
+      const response: AxiosResponse<any> = await this.axiosInstance.post(
+        `/payments/orders/${orderId}/record-payment`,
+        data
+      );
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      return this.handleApiError(error as AxiosError<GHLErrorResponse>);
+    }
+  }
+
+  /**
+   * Get notes for an order
+   * GET /payments/orders/{orderId}/notes
+   */
+  async getOrderNotes(orderId: string, params?: Record<string, any>): Promise<GHLApiResponse<any>> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && key !== 'orderId') {
+            queryParams.append(key, value.toString());
+          }
+        });
+      }
+      const qs = queryParams.toString();
+      const url = `/payments/orders/${orderId}/notes${qs ? '?' + qs : ''}`;
+      const response: AxiosResponse<any> = await this.axiosInstance.get(url);
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      return this.handleApiError(error as AxiosError<GHLErrorResponse>);
+    }
+  }
+
+  /**
+   * Update custom payment provider capabilities
+   * PUT /payments/custom-provider/capabilities
+   */
+  async updateCustomProviderCapabilities(data: Record<string, any>): Promise<GHLApiResponse<any>> {
+    try {
+      const response: AxiosResponse<any> = await this.axiosInstance.put(
+        '/payments/custom-provider/capabilities',
+        data
+      );
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      return this.handleApiError(error as AxiosError<GHLErrorResponse>);
+    }
+  }
+
+  /**
+   * Migrate an order to a different payment source
+   * POST /payments/orders/migrate-order-ps
+   */
+  async migrateOrderPaymentSource(data: Record<string, any>): Promise<GHLApiResponse<any>> {
+    try {
+      const response: AxiosResponse<any> = await this.axiosInstance.post(
+        '/payments/orders/migrate-order-ps',
+        data
+      );
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      return this.handleApiError(error as AxiosError<GHLErrorResponse>);
+    }
+  }
+
+}

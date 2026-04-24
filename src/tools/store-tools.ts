@@ -1423,4 +1423,7 @@ These settings control your store's shipping origin and email notification prefe
         throw new Error(`Unknown Store tool: ${toolName}`);
     }
   }
+
+  getToolDefinitions(): Tool[] { return this.getTools(); }
+  async executeTool(name: string, args: any): Promise<any> { return this.executeStoreTool(name, args); }
 } 

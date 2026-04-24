@@ -315,6 +315,8 @@ export interface GHLApiResponse<T = any> {
   error?: {
     message: string;
     statusCode: number;
+    code?: string;
+    fields?: Record<string, any>;
     details?: any;
   };
 }

@@ -853,8 +853,84 @@ export class PaymentsTools {
           },
           required: ['locationId', 'liveMode']
         }
+      },
+
+      // Record Payment for Order
+      {
+        name: 'record_order_payment',
+        description: 'Record a manual payment for an existing order',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            orderId: { type: 'string', description: 'ID of the order' },
+            altId: { type: 'string', description: 'Location ID' },
+            altType: { type: 'string', enum: ['location'], description: 'Alt Type' },
+            amount: { type: 'number', description: 'Payment amount in cents' },
+            currency: { type: 'string', description: 'Currency code (e.g. USD)' },
+            paymentMethod: { type: 'string', description: 'Payment method type (cash, cheque, other)' },
+            note: { type: 'string', description: 'Optional note for the payment' }
+          },
+          required: ['orderId', 'altId', 'altType', 'amount']
+        }
+      },
+
+      // Get Order Notes
+      {
+        name: 'get_order_notes',
+        description: 'Get notes/comments for a specific order',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            orderId: { type: 'string', description: 'ID of the order' },
+            altId: { type: 'string', description: 'Location ID' },
+            altType: { type: 'string', enum: ['location'], description: 'Alt Type' }
+          },
+          required: ['orderId', 'altId', 'altType']
+        }
+      },
+
+      // Update Custom Provider Capabilities
+      {
+        name: 'update_custom_provider_capabilities',
+        description: 'Update capabilities of a custom payment provider (e.g., supported features, payment methods)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            locationId: { type: 'string', description: 'Location ID' },
+            capabilities: {
+              type: 'object',
+              description: 'Capabilities to update',
+              properties: {
+                onlinePayments: { type: 'boolean', description: 'Supports online payments' },
+                refunds: { type: 'boolean', description: 'Supports refunds' },
+                subscriptions: { type: 'boolean', description: 'Supports subscriptions' },
+                tapToPay: { type: 'boolean', description: 'Supports tap to pay' },
+                cardPayments: { type: 'boolean', description: 'Supports card payments' }
+              }
+            }
+          },
+          required: ['locationId', 'capabilities']
+        }
+      },
+
+      // Migrate Order Payment Source
+      {
+        name: 'migrate_order_payment_source',
+        description: 'Migrate an order to a different payment source/provider',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            orderId: { type: 'string', description: 'ID of the order to migrate' },
+            altId: { type: 'string', description: 'Location ID' },
+            altType: { type: 'string', enum: ['location'], description: 'Alt Type' },
+            targetPaymentSource: { type: 'string', description: 'Target payment source identifier' }
+          },
+          required: ['orderId', 'altId', 'altType']
+        }
       }
+
     ];
+
   }
 
   async handleToolCall(name: string, args: any): Promise<any> {
@@ -930,8 +1006,27 @@ export class PaymentsTools {
         const { locationId: disconnectLocationId, ...disconnectData } = args;
         return this.client.disconnectCustomProviderConfig(disconnectLocationId, disconnectData as DeleteCustomProviderConfigDto);
 
+      
+      // New Payment Endpoints
+      case 'record_order_payment': {
+        const { orderId: recOrdId, ...recData } = args;
+        return this.client.recordOrderPayment(recOrdId, recData);
+      }
+
+      case 'get_order_notes':
+        return this.client.getOrderNotes(args.orderId, args);
+
+      case 'update_custom_provider_capabilities':
+        return this.client.updateCustomProviderCapabilities(args);
+
+      case 'migrate_order_payment_source':
+        return this.client.migrateOrderPaymentSource(args);
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
   }
+
+  getToolDefinitions(): Tool[] { return this.getTools(); }
+  async executeTool(name: string, args: any): Promise<any> { return this.handleToolCall(name, args); }
 } 
