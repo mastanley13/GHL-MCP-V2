@@ -1,20 +1,11 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "dist/http-server.js",
-      "use": "@vercel/node",
-      "config": {
-        "maxLambdaSize": "50mb",
-        "memory": 1024,
-        "maxDuration": 60
-      }
-    }
-  ],
+  "buildCommand": "npm install && npm run build",
+  "installCommand": "npm install",
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/dist/http-server.js"
+      "dest": "/api/index.js"
     }
   ]
 }
